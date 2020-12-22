@@ -94,7 +94,7 @@ async function init() {
         console.log(`ERROR:`, e);
     };
 
-    const canvas = document.querySelector('renderCanvas');
+    const canvas = document.querySelector('canvas');
 
     const aspect = Math.abs(canvas.width / canvas.height);
     mat4.perspective(projectionMatrix, (2 * Math.PI) / 5, aspect, 1, 100.0);
