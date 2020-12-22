@@ -1,3 +1,6 @@
+if (!navigator.gpu || GPUBufferUsage.COPY_SRC === undefined)
+    window.alert('error');
+
 const positionAttributeNum  = 0;
 const texCoordsAttributeNum = 1;
 
@@ -92,6 +95,7 @@ async function init() {
 
     device.onuncapturederror = function (e) {
         console.log(`ERROR:`, e);
+        window.alert('ERROR');
     };
 
     const canvas = document.querySelector('canvas');
@@ -324,6 +328,7 @@ async function init() {
     };
 
     render();
+    window.alert('render success');
 }
 
 /* Transform Buffers and Bindings */
