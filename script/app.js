@@ -150,7 +150,7 @@ async function init() {
     const image = new Image();
     const imageLoadPromise = new Promise(resolve => { 
         image.onload = () => resolve(); 
-        image.src = "../asset/safari-alpha.png"
+        image.src = "raw.githubusercontent.com/cree321/project-t/v0/asset/safari-alpha.png"
     });
     await Promise.resolve(imageLoadPromise);
 
