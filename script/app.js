@@ -1,3 +1,5 @@
+"use strict";
+
 if (!navigator.gpu || GPUBufferUsage.COPY_SRC === undefined)
     document.body.className = 'error';
 
