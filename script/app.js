@@ -2,102 +2,94 @@ if (!navigator.gpu || GPUBufferUsage.COPY_SRC === undefined)
     document.body.className = 'error';
 
 const positionAttributeNum  = 0;
-const texCoordsAttributeNum = 1;
+const colorAttributeNum = 1;
 
 const transformBindingNum   = 0;
-const textureBindingNum     = 1;
-const samplerBindingNum     = 2;
 
 const bindGroupIndex        = 0;
 
 const shader = `
 struct FragmentData {
     float4 position : SV_Position;
-    float2 texCoords : attribute(${texCoordsAttributeNum});
+    float4 color : attribute(${colorAttributeNum});
 }
 
 vertex FragmentData vertex_main(
     float4 position : attribute(${positionAttributeNum}), 
-    float2 texCoords : attribute(${texCoordsAttributeNum}), 
+    float4 color : attribute(${colorAttributeNum}), 
     constant float4x4[] modelViewProjectionMatrix : register(b${transformBindingNum}))
 {
     FragmentData out;
     out.position = mul(modelViewProjectionMatrix[0], position);
-    out.texCoords = texCoords;
+    out.color = color;
     
     return out;
 }
 
-fragment float4 fragment_main(
-    float2 texCoords : attribute(${texCoordsAttributeNum}),
-    Texture2D<float4> faceTexture : register(t${textureBindingNum}),
-    sampler faceSampler : register(s${samplerBindingNum})) : SV_Target 0
+fragment float4 fragment_main(float4 color : attribute(${colorAttributeNum})) : SV_Target 0
 {
-    return Sample(faceTexture, faceSampler, texCoords);
+    return color;
 }
 `;
 
-//console.log(`Shader is: ${shader}`);
-
-let device, swapChain, verticesBuffer, bindGroupLayout, pipeline, renderPassDescriptor, queue, textureViewBinding, samplerBinding;
+let device, swapChain, verticesBuffer, bindGroupLayout, pipeline, renderPassDescriptor;
 let projectionMatrix = mat4.create();
 
-const texCoordsOffset = 4 * 4;
-const vertexSize = 4 * 6;
+const colorOffset = 4 * 4;
+const vertexSize = 4 * 8;
 const verticesArray = new Float32Array([
-    // float4 position, float2 texCoords
-    1, -1, -1, 1, 0, 1,
-    -1, -1, -1, 1, 1, 1,
-    -1, 1, -1, 1, 1, 0,
-    1, 1, -1, 1, 0, 0,
-    1, -1, -1, 1, 0, 1,
-    -1, 1, -1, 1, 1, 0,
+    // float4 position, float4 color
+    1, -1, 1, 1, 1, 0, 1, 1,
+    -1, -1, 1, 1, 0, 0, 1, 1,
+    -1, -1, -1, 1, 0, 0, 0, 1,
+    1, -1, -1, 1, 1, 0, 0, 1,
+    1, -1, 1, 1, 1, 0, 1, 1,
+    -1, -1, -1, 1, 0, 0, 0, 1,
 
-    1, 1, 1, 1, 0, 0,
-    1, -1, 1, 1, 0, 1,
-    1, -1, -1, 1, 1, 1,
-    1, 1, -1, 1, 1, 0,
-    1, 1, 1, 1, 0, 0,
-    1, -1, -1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1,
+    1, -1, 1, 1, 1, 0, 1, 1,
+    1, -1, -1, 1, 1, 0, 0, 1,
+    1, 1, -1, 1, 1, 1, 0, 1,
+    1, 1, 1, 1, 1, 1, 1, 1,
+    1, -1, -1, 1, 1, 0, 0, 1,
 
-    1, -1, 1, 1, 1, 0, 
-    -1, -1, 1, 1, 0, 0, 
-    -1, -1, -1, 1, 0, 1, 
-    1, -1, -1, 1, 1, 1,
-    1, -1, 1, 1, 1, 0,
-    -1, -1, -1, 1, 0, 1,
+    -1, 1, 1, 1, 0, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, -1, 1, 1, 1, 0, 1,
+    -1, 1, -1, 1, 0, 1, 0, 1,
+    -1, 1, 1, 1, 0, 1, 1, 1,
+    1, 1, -1, 1, 1, 1, 0, 1,
 
-    -1, 1, 1, 1, 0, 1,
-    1, 1, 1, 1, 1, 1,
-    1, 1, -1, 1, 1, 0,
-    -1, 1, -1, 1, 0, 0,
-    -1, 1, 1, 1, 0, 1,
-    1, 1, -1, 1, 1, 0,
+    -1, -1, 1, 1, 0, 0, 1, 1,
+    -1, 1, 1, 1, 0, 1, 1, 1,
+    -1, 1, -1, 1, 0, 1, 0, 1,
+    -1, -1, -1, 1, 0, 0, 0, 1,
+    -1, -1, 1, 1, 0, 0, 1, 1,
+    -1, 1, -1, 1, 0, 1, 0, 1,
 
-    -1, -1, 1, 1, 1, 1,
-    -1, 1, 1, 1, 1, 0,
-    -1, 1, -1, 1, 0, 0,
-    -1, -1, -1, 1, 0, 1,
-    -1, -1, 1, 1, 1, 1,
-    -1, 1, -1, 1, 0, 0,
+    1, 1, 1, 1, 1, 1, 1, 1,
+    -1, 1, 1, 1, 0, 1, 1, 1,
+    -1, -1, 1, 1, 0, 0, 1, 1,
+    -1, -1, 1, 1, 0, 0, 1, 1,
+    1, -1, 1, 1, 1, 0, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1,
 
-    1, 1, 1, 1, 1, 0,
-    -1, 1, 1, 1, 0, 0,
-    -1, -1, 1, 1, 0, 1,
-    -1, -1, 1, 1, 0, 1,
-    1, -1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 0,
+    1, -1, -1, 1, 1, 0, 0, 1,
+    -1, -1, -1, 1, 0, 0, 0, 1,
+    -1, 1, -1, 1, 0, 1, 0, 1,
+    1, 1, -1, 1, 1, 1, 0, 1,
+    1, -1, -1, 1, 1, 0, 0, 1,
+    -1, 1, -1, 1, 0, 1, 0, 1,
 ]);
 
 async function init() {
     const adapter = await navigator.gpu.requestAdapter();
     device = await adapter.requestDevice();
 
-    device.onuncapturederror = function (e) {
-        console.log(`ERROR:`, e);
-    };
-
     const canvas = document.querySelector('canvas');
+    let canvasSize = canvas.getBoundingClientRect();
+    canvas.width = canvasSize.width;
+    canvas.height = canvasSize.height;
 
     const aspect = Math.abs(canvas.width / canvas.height);
     mat4.perspective(projectionMatrix, (2 * Math.PI) / 5, aspect, 1, 100.0);
@@ -110,7 +102,6 @@ async function init() {
     };
     swapChain = context.configureSwapChain(swapChainDescriptor);
 
-    // WebKit WebGPU accepts only MSL for now.
     const shaderModuleDescriptor = { code: shader, isWHLSL: true };
     const shaderModule = device.createShaderModule(shaderModuleDescriptor);
 
@@ -126,89 +117,22 @@ async function init() {
     verticesBuffer.unmap();
 
     // Vertex Input
-    
     const positionAttributeDescriptor = {
-        shaderLocation: positionAttributeNum,  // [[attribute(0)]].
+        shaderLocation: positionAttributeNum,  // [[attribute(0)]]
         offset: 0,
         format: "float4"
     };
-    const texCoordsAttributeDescriptor = {
-        shaderLocation: texCoordsAttributeNum,
-        offset: texCoordsOffset,
-        format: "float2"
+    const colorAttributeDescriptor = {
+        shaderLocation: colorAttributeNum,
+        offset: colorOffset,
+        format: "float4"
     }
     const vertexBufferDescriptor = {
-        attributeSet: [positionAttributeDescriptor, texCoordsAttributeDescriptor],
+        attributeSet: [positionAttributeDescriptor, colorAttributeDescriptor],
         stride: vertexSize,
         stepMode: "vertex"
     };
     const vertexInputDescriptor = { vertexBuffers: [vertexBufferDescriptor] };
-
-    // Texture
-
-    // Load texture image
-    const image = new Image();
-    const imageLoadPromise = new Promise(resolve => { 
-        image.onload = () => resolve(); 
-        image.src = "https://raw.githubusercontent.com/cree321/project-t/v0/asset/safari-alpha.png"
-    });
-    await Promise.resolve(imageLoadPromise);
-
-    const textureSize = {
-        width: image.width,
-        height: image.height,
-        depth: 1
-    };
-
-    const textureDescriptor = {
-        size: textureSize,
-        arrayLayerCount: 1,
-        mipLevelCount: 1,
-        sampleCount: 1,
-        dimension: "2d",
-        format: "rgba8unorm",
-        usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.SAMPLED
-    };
-    const texture = device.createTexture(textureDescriptor);
-
-    // Texture data 
-    const canvas2d = document.createElement('canvas');
-    canvas2d.width = image.width;
-    canvas2d.height = image.height;
-    const context2d = canvas2d.getContext('2d');
-    context2d.drawImage(image, 0, 0);
-
-    const imageData = context2d.getImageData(0, 0, image.width, image.height);
-
-    const textureDataBufferDescriptor = {
-        size: imageData.data.length,
-        usage: GPUBufferUsage.COPY_SRC
-    };
-    const [textureDataBuffer, textureArrayBuffer] = device.createBufferMapped(textureDataBufferDescriptor);
-    
-    const textureWriteArray = new Uint8Array(textureArrayBuffer);
-    textureWriteArray.set(imageData.data);
-    textureDataBuffer.unmap();
-
-    const dataCopyView = {
-        buffer: textureDataBuffer,
-        offset: 0,
-        rowPitch: image.width * 4,
-        imageHeight: 0
-    };
-    const textureCopyView = {
-        texture: texture,
-        mipLevel: 0,
-        arrayLayer: 0,
-        origin: { x: 0, y: 0, z: 0 }
-    };
-
-    const blitCommandEncoder = device.createCommandEncoder();
-    blitCommandEncoder.copyBufferToTexture(dataCopyView, textureCopyView, textureSize);
-
-    queue = device.getQueue();
-
-    queue.submit([blitCommandEncoder.finish()]);
 
     // Bind group binding layout
     const transformBufferBindGroupLayoutBinding = {
@@ -217,29 +141,7 @@ async function init() {
         type: "uniform-buffer"
     };
 
-    const textureBindGroupLayoutBinding = {
-        binding: textureBindingNum,
-        visibility: GPUShaderStage.FRAGMENT,
-        type: "sampled-texture"
-    };
-    textureViewBinding = {
-        binding: textureBindingNum,
-        resource: texture.createDefaultView()
-    };
-
-    const samplerBindGroupLayoutBinding = {
-        binding: samplerBindingNum,
-        visibility: GPUShaderStage.FRAGMENT,
-        type: "sampler"
-    };
-    samplerBinding = {
-        binding: samplerBindingNum,
-        resource: device.createSampler({})
-    };
-
-    const bindGroupLayoutDescriptor = { 
-        bindings: [transformBufferBindGroupLayoutBinding, textureBindGroupLayoutBinding, samplerBindGroupLayoutBinding] 
-    };
+    const bindGroupLayoutDescriptor = { bindings: [transformBufferBindGroupLayoutBinding] };
     bindGroupLayout = device.createBindGroupLayout(bindGroupLayoutDescriptor);
 
     // Pipeline
@@ -289,7 +191,7 @@ async function init() {
         // attachment is acquired in render loop.
         loadOp: "clear",
         storeOp: "store",
-        clearColor: { r: 0.05, g: .3, b: .6, a: 1.0 } // GPUColor
+        clearColor: { r: 0.15, g: 0.15, b: 0.5, a: 1.0 } // GPUColor
     };
 
     // Depth stencil texture
@@ -342,14 +244,14 @@ let mappedGroups = [];
 function render() {
     if (mappedGroups.length === 0) {
         const [buffer, arrayBuffer] = device.createBufferMapped(transformBufferDescriptor);
-        const group = device.createBindGroup(createBindGroupDescriptor(buffer, textureViewBinding, samplerBinding));
+        const group = device.createBindGroup(createBindGroupDescriptor(buffer));
         let mappedGroup = { buffer: buffer, arrayBuffer: arrayBuffer, bindGroup: group };
         drawCommands(mappedGroup);
     } else
         drawCommands(mappedGroups.shift());
 }
 
-function createBindGroupDescriptor(transformBuffer, textureViewBinding, samplerBinding) {
+function createBindGroupDescriptor(transformBuffer) {
     const transformBufferBinding = {
         buffer: transformBuffer,
         offset: 0,
@@ -361,7 +263,7 @@ function createBindGroupDescriptor(transformBuffer, textureViewBinding, samplerB
     };
     return {
         layout: bindGroupLayout,
-        bindings: [transformBufferBindGroupBinding, textureViewBinding, samplerBinding]
+        bindings: [transformBufferBindGroupBinding]
     };
 }
 
@@ -372,16 +274,19 @@ function drawCommands(mappedGroup) {
     const commandEncoder = device.createCommandEncoder();
     renderPassDescriptor.colorAttachments[0].attachment = swapChain.getCurrentTexture().createDefaultView();
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-    // Encode drawing commands.
+
+    // Encode drawing commands
+
     passEncoder.setPipeline(pipeline);
     // Vertex attributes
     passEncoder.setVertexBuffers(0, [verticesBuffer], [0]);
     // Bind groups
     passEncoder.setBindGroup(bindGroupIndex, mappedGroup.bindGroup);
+    // 36 vertices, 1 instance, 0th vertex, 0th instance.
     passEncoder.draw(36, 1, 0, 0);
     passEncoder.endPass();
 
-    queue.submit([commandEncoder.finish()]);
+    device.getQueue().submit([commandEncoder.finish()]);
 
     // Ready the current buffer for update after GPU is done with it.
     mappedGroup.buffer.mapWriteAsync().then((arrayBuffer) => {
@@ -396,7 +301,7 @@ function updateTransformArray(array) {
     let viewMatrix = mat4.create();
     mat4.translate(viewMatrix, viewMatrix, vec3.fromValues(0, 0, -5));
     let now = Date.now() / 1000;
-    mat4.rotate(viewMatrix, viewMatrix, 1, vec3.fromValues(Math.sin(now), 1, 1));
+    mat4.rotate(viewMatrix, viewMatrix, 1, vec3.fromValues(Math.sin(now), Math.cos(now), 0));
     let modelViewProjectionMatrix = mat4.create();
     mat4.multiply(modelViewProjectionMatrix, projectionMatrix, viewMatrix);
     mat4.copy(array, modelViewProjectionMatrix);
