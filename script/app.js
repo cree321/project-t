@@ -193,7 +193,7 @@ async function init() {
         // attachment is acquired in render loop.
         loadOp: "clear",
         storeOp: "store",
-        clearColor: { r: 0.15, g: 0.15, b: 0.5, a: 1.0 } // GPUColor
+        clearColor: { r: 0.15, g: 0.15, b: 0.15, a: 1.0 } // GPUColor
     };
 
     // Depth stencil texture
