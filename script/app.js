@@ -1,3 +1,7 @@
+"use strict";
+
+let device, swapChain, vertexBuffer, renderPipeline, renderPassDescriptor;
+
 async function init() {
     if (!navigator.gpu || GPUBufferUsage.COPY_SRC === undefined) {
         document.body.className = 'error';
@@ -5,7 +9,7 @@ async function init() {
     }
 
     const adapter = await navigator.gpu.requestAdapter();
-    const device = await adapter.requestDevice();
+    device = await adapter.requestDevice();
     
     /*** Shader Setup ***/
     
@@ -53,7 +57,7 @@ async function init() {
         usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.VERTEX
     };
     /* GPUBuffer */
-    const vertexBuffer = device.createBuffer(vertexDataBufferDescriptor);
+    vertexBuffer = device.createBuffer(vertexDataBufferDescriptor);
     
     /*** Write Data To GPU ***/
     
@@ -117,7 +121,7 @@ async function init() {
         vertexInput: vertexInputDescriptor
     };
     /* GPURenderPipeline */
-    const renderPipeline = device.createRenderPipeline(renderPipelineDescriptor);
+    renderPipeline = device.createRenderPipeline(renderPipelineDescriptor);
     
     /*** Swap Chain Setup ***/
     
@@ -130,7 +134,7 @@ async function init() {
     /* GPUSwapChainDescriptor */
     const swapChainDescriptor = { device: device, format: "bgra8unorm" };
     /* GPUSwapChain */
-    const swapChain = gpuContext.configureSwapChain(swapChainDescriptor);
+    swapChain = gpuContext.configureSwapChain(swapChainDescriptor);
     
     /*** Render Pass Setup ***/
     
@@ -153,7 +157,7 @@ async function init() {
     };
     
     /* GPURenderPassDescriptor */
-    const renderPassDescriptor = { colorAttachments: [colorAttachmentDescriptor] };
+    renderPassDescriptor = { colorAttachments: [colorAttachmentDescriptor] };
     
     /*** Rendering ***/
     
