@@ -285,7 +285,7 @@ function drawCommands(mappedGroup) {
     // Bind groups
     passEncoder.setBindGroup(bindGroupIndex, mappedGroup.bindGroup);
     // 36 vertices, 1 instance, 0th vertex, 0th instance.
-    passEncoder.draw(18, 1, 0, 0);
+    passEncoder.draw(36, 1, 0, 0);
     passEncoder.endPass();
 
     device.getQueue().submit([commandEncoder.finish()]);
