@@ -91,7 +91,6 @@ async function init() {/***           INIT            ***/
     device = await adapter.requestDevice();
 
     const canvas = document.querySelector('canvas');
-    canvas.requestFullscreen();
     let canvasSize = canvas.getBoundingClientRect();
     canvas.width = canvasSize.width;
     canvas.height = canvasSize.height;
