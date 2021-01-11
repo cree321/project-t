@@ -1,5 +1,7 @@
 "use strict";
 
+let movementArea, rotationArea;
+
 if (!navigator.gpu || GPUBufferUsage.COPY_SRC === undefined)
     document.body.className = 'error';
 
@@ -84,7 +86,7 @@ const verticesArray = new Float32Array([
     -1, 1, -1, 1, 0, 1, 0, 1,
 ]);
 
-async function init() {
+async function init() {/***           INIT            ***/
     const adapter = await navigator.gpu.requestAdapter();
     device = await adapter.requestDevice();
 
@@ -233,6 +235,14 @@ async function init() {
     render();
 }
 
+function initInput() {/***           INIT INPUT            ***/
+    movementArea = document.getElementById("movementArea");
+    rotationArea = document.getElementById("rotationArea");
+    
+    movementArea.addEventListener("touchmove", init);
+    rotationArea.addEventListener("touchmove", init);
+}
+
 /* Transform Buffers and Bindings */
 const transformSize = 4 * 16;
 
@@ -243,7 +253,7 @@ const transformBufferDescriptor = {
 
 let mappedGroups = [];
 
-function render() {
+function render() {/***           RENDER            ***/
     if (mappedGroups.length === 0) {
         const [buffer, arrayBuffer] = device.createBufferMapped(transformBufferDescriptor);
         const group = device.createBindGroup(createBindGroupDescriptor(buffer));
@@ -253,7 +263,7 @@ function render() {
         drawCommands(mappedGroups.shift());
 }
 
-function createBindGroupDescriptor(transformBuffer) {
+function createBindGroupDescriptor(transformBuffer) {/***           CREATE BINDGROUP            ***/
     const transformBufferBinding = {
         buffer: transformBuffer,
         offset: 0,
@@ -269,7 +279,7 @@ function createBindGroupDescriptor(transformBuffer) {
     };
 }
 
-function drawCommands(mappedGroup) {
+function drawCommands(mappedGroup) {/***           RENDER LOOP            ***/
     updateTransformArray(new Float32Array(mappedGroup.arrayBuffer));
     mappedGroup.buffer.unmap();
 
@@ -299,7 +309,7 @@ function drawCommands(mappedGroup) {
     requestAnimationFrame(render);
 }
 
-function updateTransformArray(array) {
+function updateTransformArray(array) {/***           RENDER LOOP            ***/
     let viewMatrix = mat4.create();
     mat4.translate(viewMatrix, viewMatrix, vec3.fromValues(0, 0, -5));
     let now = Date.now() / 1000;
