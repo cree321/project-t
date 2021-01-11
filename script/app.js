@@ -1,6 +1,6 @@
 "use strict";
 
-let movementArea, rotationArea;
+let motionArea, rotationArea;
 
 if (!navigator.gpu || GPUBufferUsage.COPY_SRC === undefined)
     document.body.className = 'error';
@@ -91,6 +91,7 @@ async function init() {/***           INIT            ***/
     device = await adapter.requestDevice();
 
     const canvas = document.querySelector('canvas');
+    canvas.requestFullscreen();
     let canvasSize = canvas.getBoundingClientRect();
     canvas.width = canvasSize.width;
     canvas.height = canvasSize.height;
@@ -236,10 +237,10 @@ async function init() {/***           INIT            ***/
 }
 
 function initInput() {/***           INIT INPUT            ***/
-    movementArea = document.getElementById("movementArea");
+    motionArea = document.getElementById("motionArea");
     rotationArea = document.getElementById("rotationArea");
     
-    movementArea.addEventListener("touchmove", init);
+    motionArea.addEventListener("touchmove", init);
     rotationArea.addEventListener("touchmove", init);
 }
 
