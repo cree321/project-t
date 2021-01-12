@@ -1,5 +1,7 @@
 "use strict";
 
+const inputWorker = new Worker("worker/inputWorker.js");
+
 let motionArea, rotationArea;
 
 if (!navigator.gpu || GPUBufferUsage.COPY_SRC === undefined)
@@ -232,15 +234,15 @@ async function init() {/***           INIT            ***/
         depthStencilAttachment: depthAttachment
     };
 
-    render();
+    render(performance.now);
 }
 
 function initInput() {/***           INIT INPUT            ***/
     motionArea = document.getElementById("motionArea");
     rotationArea = document.getElementById("rotationArea");
     
-    motionArea.addEventListener("touchmove", init);
-    rotationArea.addEventListener("touchmove", init);
+    motionArea.addEventListener("pointerdown", (e) => inputWorker.postMessage(e));
+    rotationArea.addEventListener("touchmove", (e) => inputWorker.postMessage(e));
 }
 
 /* Transform Buffers and Bindings */
@@ -253,7 +255,7 @@ const transformBufferDescriptor = {
 
 let mappedGroups = [];
 
-function render() {/***           RENDER            ***/
+function render(now) {/***           RENDER            ***/
     if (mappedGroups.length === 0) {
         const [buffer, arrayBuffer] = device.createBufferMapped(transformBufferDescriptor);
         const group = device.createBindGroup(createBindGroupDescriptor(buffer));
